@@ -6,7 +6,6 @@ import Data.List
 import Data.List.Split
 import Data.Char
 
--- Player Name Character
 data Player = Player String Char deriving (Show)
 data Square = Square Position (Maybe Player) deriving (Show)
 
@@ -26,15 +25,10 @@ squareRow (Square (a, _) _) = a + 1
 
 -- Get the value in a square
 squareValue :: Square -> Char
-squareValue (Square (_, _) Nothing) = ' '
-squareValue (Square (_, _) (Just (Player _ a))) = a
+squareValue (Square _ Nothing) = ' '
+squareValue (Square _ (Just (Player _ a))) = a
 
--- Get the position (Int, Int) of a Square
-squarePosition :: Square -> Position
-squarePosition (Square position _) = position
-
--- Return the lines in a given board. BoardLine type could be changed to use
--- list of Squares instead of tuples to simplify this.
+-- Return the lines in a given board
 boardLines :: Board -> [BoardLine]
 boardLines = map (\(x:y:z:[]) -> (x, y, z)) . chunksOf 3
 
