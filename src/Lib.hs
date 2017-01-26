@@ -5,6 +5,7 @@ module Lib
 import Data.List
 import Data.List.Split
 import Data.Char
+import Text.Regex.Posix
 
 data Player = Player { name :: String, character :: Char } deriving (Show, Eq)
 data Square = Square { position :: Position, occupant :: Maybe Player } deriving (Show)
@@ -55,12 +56,6 @@ boardStr :: Board -> String
 boardStr board = unlines $ ("   A   B   C ":) $ intersperse gridSpacer lineStrings
   where lineStrings = map boardLineStr $ boardLines board
 
--- -- Figure out if a player has won
--- boardWonBy :: Player -> Board -> Boolean
--- boardWonBy player squares =
---   map (\(a,b,c) -> (squareAtPosition a squares, squareAtPosition b squares, squareAtPosition c squares)) winningSequences
---   -- filter (\(Square position _) -> position ==) squares
-
 -- Return the square at a given position. Could produce a runtime error if given
 -- a position that is out of bounds. This won't happen as the winningSequences
 -- data is hardcoded.
@@ -92,38 +87,55 @@ permutationWinner permutation
 boardWon :: Board -> Bool
 boardWon = any permutationWon . winnablePermutations
 
+boardFull :: Board -> Bool
+boardFull board = all (/= Nothing) $ map occupant board
+
 -- Play move if matching
 playMatchingMove :: Position -> Player -> Square -> Square
-playMatchingMove position player (Square position' _)
+playMatchingMove position player (Square position' occupant)
   | position' == position = Square position' (Just player)
-  | otherwise             = Square position' Nothing
+  | otherwise             = Square position' occupant
 
 -- Plays a given move by a player
 playMove :: Position -> Player -> Board -> Board
 playMove position player = map (playMatchingMove position player)
 
+-- GRMA Bryan O'Sullivan - http://www.serpentine.com/blog/2007/02/27/a-haskell-regular-expression-tutorial/
+translateMove :: String -> Maybe Position
+translateMove ('A':y:[]) = translateMove $ '0':y:[]
+translateMove ('B':y:[]) = translateMove $ '1':y:[]
+translateMove ('C':y:[]) = translateMove $ '2':y:[]
+translateMove (x:y:[]) = Just ((digitToInt y) - 1, digitToInt x)
+translateMove _ = Nothing
+
 getMove :: IO Position
 getMove = do
-  putStrLn "Hello, make a move! (x, y)"
+  putStrLn "Make a move! (e.g. A1, C2, etc)"
   move <- getLine
+  let position = translateMove move
 
-  return $ read move :: IO Position
+  case position of
+    Nothing -> getMove
+    Just a -> return a
 
--- Debug method to show current winable state statuses
-winnableStatesProgress :: Board -> String
-winnableStatesProgress = unlines . map show . winnablePermutations
+playGame :: Board -> Player -> IO Board
+playGame board player = do
+  putStrLn $ boardStr board
+  pos <- getMove
+
+  let newBoard = playMove pos player board
+
+  if (boardWon newBoard) || (boardFull newBoard)
+    then return newBoard
+    else playGame newBoard player
 
 initiateGame :: IO ()
 initiateGame = do
   let player1 = Player "John" 'x'
-  putStrLn $ winnableStatesProgress initialBoard
-  pos <- getMove
 
-  let newBoard = playMove pos player1 $ initialBoard
-  putStrLn $ boardStr newBoard
+  finalBoard <- playGame initialBoard player1
+  putStrLn $ boardStr finalBoard
 
-  if boardWon newBoard
+  if boardWon finalBoard
   then putStrLn "Won"
   else putStrLn "No win"
-
-  -- putStrLn $ winnableStatesProgress newBoard
