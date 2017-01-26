@@ -2,9 +2,10 @@ module Lib
     ( initiateGame
     ) where
 
-import Data.List
-import Data.List.Split
-import Data.Char
+import Data.List (intersperse, nub)
+import Data.List.Split (chunksOf)
+import Data.Char (intToDigit, digitToInt)
+-- unused vv
 import Text.Regex.Posix
 
 data Player = Player { name :: String, character :: Char } deriving (Show, Eq)
@@ -17,9 +18,7 @@ type BoardLine = (Square, Square, Square)
 
 -- The default board state in a new game
 initialBoard :: Board
-initialBoard = [Square (0,0) Nothing, Square (0,1) Nothing, Square (0,2) Nothing,
-                Square (1,0) Nothing, Square (1,1) Nothing, Square (1,2) Nothing,
-                Square (2,0) Nothing, Square (2,1) Nothing, Square (2,2) Nothing]
+initialBoard = map (\pos -> Square pos Nothing) $ (,) <$> [0,1,2] <*> [0,1,2]
 
 -- Sequences of positions that can win the game
 winningSequences :: [Sequence]
